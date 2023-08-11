@@ -20,7 +20,7 @@ const productSchema = new Schema<ProductModel>(
         },
         categoryId: {
             type: Schema.Types.ObjectId,
-            ref: 'category',
+            ref: 'Category',
             required: true,
         },
         description: {
@@ -45,6 +45,12 @@ const productSchema = new Schema<ProductModel>(
     }
 );
 
+
 const Product = model<ProductModel>('Product', productSchema);
 
-export default Product;
+
+
+export {
+    Product,
+    ProductModel
+};

@@ -20,6 +20,9 @@ const categorySchema = new Schema<CategoryModel>(
     }
 );
 
+
 const Category = model<CategoryModel>('Category', categorySchema);
+
+
 
 export default Category;

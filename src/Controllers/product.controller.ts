@@ -1,27 +1,21 @@
 import { Request, Response, NextFunction } from 'express';
 
-import Product from '../Models/products.model';
-import Category from '../Models/categories.model';
+import { Product, ProductModel } from '../Models/product.model';
+import Category from '../Models/category.model';
 import CustomError from '../Utils/CustomError.util';
 
+
+// ---------------------------------- create product ----------------------------------
 
 const createProduct = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const checkCategoryExist = await Category.findById(req.body.categoryId);
-        if (!checkCategoryExist) {
-            throw new CustomError("This Category doesn't exist", 404)
-        }
+        if (!checkCategoryExist) throw new CustomError("This Category doesn't exist", 404);
         const productName = req.body.name.trim();
-        if (productName.length < 3) {
-            throw new CustomError('Product name is short', 400);
-        }
-        if (productName == '') {
-            throw new CustomError('Invalid product name', 400);
-        }
+        if (productName.length < 3) throw new CustomError('Product name is short', 400);
+        if (productName == '') throw new CustomError('Invalid product name', 400);
         const checkProductExist = await Product.findOne({ name: req.body.name });
-        if (checkProductExist) {
-            throw new CustomError('Product already exists, You can edit on it', 400);
-        }
+        if (checkProductExist) throw new CustomError('Product already exists, You can edit on it', 400);
         const product = await Product.create({
             name: (req.body.name).toLowerCase(),
             categoryId: req.body.categoryId,
@@ -48,8 +42,8 @@ const getAllProducts = async (req: Request, res: Response, next: NextFunction) =
         const totalProducts: any = await Product.countDocuments();
         const totalPages: number = Math.ceil(totalProducts / pageSize);
         if (page > totalPages) throw new CustomError("This page doesn't exist", 404);
-        const products = await Product.find().sort({ createdAt: -1 }).skip(skip).limit(pageSize);
-        res.status(200).send({ page: page, pageSize: pageSize, products: products, totalProducts: totalProducts, totalPages: totalPages });
+        const products = await Product.find().populate({ path: 'categoryId', select: 'name -_id' }).sort('-createdAt').skip(skip).limit(pageSize);
+        res.status(200).send({ page: page, totalPages: totalPages, pageSize: pageSize, totalProducts: totalProducts, products: products });
     } catch (err: any) {
         next(err);
     };
@@ -57,7 +51,7 @@ const getAllProducts = async (req: Request, res: Response, next: NextFunction) =
 
 const getProductById = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const category = await Product.findById(req.params.id);
+        const category = await Product.findById(req.params.id).populate({ path: 'categoryId', select: 'name -_id' });
         if (category) {
             res.status(200).send(category);
         } else {
@@ -101,10 +95,10 @@ const updateProduct = async (req: Request, res: Response, next: NextFunction) =>
         }
         if (fieldsToUpdate.length === 0) throw new CustomError('No fields to update', 400);
         if (fieldsToUpdate.includes('name') && req.body.name.trim() === "") throw new CustomError('Product name cannot be empty', 400);
-        if (fieldsToUpdate.includes('price') && (req.body.price.trim() === "" && isNaN(Number(req.body.price)))) throw new CustomError('Price must be a valid number', 400);
         if (fieldsToUpdate.includes('description') && req.body.description.trim() === "") throw new CustomError('Product description cannot be empty', 400);
-        if (fieldsToUpdate.includes('stock') && (req.body.stock.trim() === "" && isNaN(Number(req.body.stock)))) throw new CustomError('Stock must be a valid number', 400);
         if (fieldsToUpdate.includes('color') && req.body.color.trim() === "") throw new CustomError('Product color cannot be empty', 400);
+        if (fieldsToUpdate.includes('price') && (req.body.price.trim() === "" && isNaN(Number(req.body.price)))) throw new CustomError('Price must be a valid number', 400);
+        if (fieldsToUpdate.includes('stock') && (req.body.stock.trim() === "" && isNaN(Number(req.body.stock)))) throw new CustomError('Stock must be a valid number', 400);
         const updatedProduct = await Product.updateOne({ _id: product._id }, req.body, { returnOriginal: false });
         res.status(200).send(updatedProduct);
     } catch (error) {
@@ -121,9 +115,9 @@ const searchByProductName = async (req: Request, res: Response, next: NextFuncti
         const totalProducts: number = await Product.countDocuments(regexQuery);
         let products;
         if (req.query.sort === '1') {
-            products = await Product.find(regexQuery).sort({ createdAt: 1 }).skip(skip).limit(pageSize);
+            products = await Product.find(regexQuery).populate({ path: 'categoryId', select: 'name -_id' }).sort({ createdAt: 1 }).skip(skip).limit(pageSize);
         } else {
-            products = await Product.find(regexQuery).sort({ createdAt: -1 }).skip(skip).limit(pageSize);
+            products = await Product.find(regexQuery).populate({ path: 'categoryId', select: 'name -_id' }).sort({ createdAt: -1 }).skip(skip).limit(pageSize);
         };
         const totalPages: number = Math.ceil(totalProducts / pageSize);
         if (products) {
@@ -152,9 +146,9 @@ const searchGeneralOnProduct = async (req: Request, res: Response, next: NextFun
         const totalProducts: number = await Product.countDocuments(regexQuery);
         let products;
         if (req.query.sort === '1') {
-            products = await Product.find(regexQuery).sort({ createdAt: 1 }).skip(skip).limit(pageSize);
+            products = await Product.find(regexQuery).populate({ path: 'categoryId', select: 'name -_id' }).sort({ createdAt: 1 }).skip(skip).limit(pageSize);
         } else {
-            products = await Product.find(regexQuery).sort({ createdAt: -1 }).skip(skip).limit(pageSize);
+            products = await Product.find(regexQuery).populate({ path: 'categoryId', select: 'name -_id' }).sort({ createdAt: -1 }).skip(skip).limit(pageSize);
         };
         const totalPages: number = Math.ceil(totalProducts / pageSize);
         res.status(200).send({ page: page, totalPages: totalPages, pageSize: pageSize, totalProducts: totalProducts, products: products });
@@ -171,12 +165,9 @@ const filterProductsByCategory = async (req: Request, res: Response, next: NextF
         let page: number = parseInt(req.query.pageNumber as string, 10) || 1;
         let skip: number = (page - 1) * pageSize;
         const totalProducts: number = await Product.countDocuments({ categoryId: category._id });
-        let products;
-        if (req.query.sort === '1') {
-            products = await Product.find({ categoryId: category._id }).sort({ createdAt: 1 }).skip(skip).limit(pageSize);
-        } else {
-            products = await Product.find({ categoryId: category._id }).sort({ createdAt: -1 }).skip(skip).limit(pageSize);
-        };
+        const sortIndicator = req.query.sort === '1' ? 1 : -1;
+        let products: ProductModel[];
+        products = await Product.find({ categoryId: category._id }).populate({ path: 'categoryId', select: 'name -_id' }).sort({ createdAt: sortIndicator }).skip(skip).limit(pageSize);
         const totalPages: number = Math.ceil(totalProducts / pageSize);
         if (products) {
             res.status(200).send({ page: page, totalPages: totalPages, pageSize: pageSize, totalProducts: totalProducts, products: products });
@@ -194,12 +185,9 @@ const filterProductsByColor = async (req: Request, res: Response, next: NextFunc
         let page: number = parseInt(req.query.pageNumber as string, 10) || 1;
         let skip: number = (page - 1) * pageSize;
         const totalProducts: number = await Product.countDocuments({ color: req.params.color });
-        let products;
-        if (req.query.sort === '1') {
-            products = await Product.find({ color: req.params.color }).sort({ createdAt: 1 }).skip(skip).limit(pageSize);
-        } else {
-            products = await Product.find({ color: req.params.color }).sort({ createdAt: -1 }).skip(skip).limit(pageSize);
-        };
+        const sortIndicator = req.query.sort === '1' ? 1 : -1;
+        let products: ProductModel[];
+        products = await Product.find({ color: req.params.color }).populate({ path: 'categoryId', select: 'name -_id' }).sort({ createdAt: sortIndicator }).skip(skip).limit(pageSize);
         const totalPages: number = Math.ceil(totalProducts / pageSize);
         if (products) {
             res.status(200).send({ page: page, totalPages: totalPages, pageSize: pageSize, totalProducts: totalProducts, products: products });
@@ -220,12 +208,9 @@ const filterProductsByPrice = async (req: Request, res: Response, next: NextFunc
         let page: number = parseInt(req.query.pageNumber as string, 10) || 1;
         let skip: number = (page - 1) * pageSize;
         const totalProducts: number = await Product.countDocuments({ price: { $gte: fromPrice, $lte: toPrice } });
-        let products;
-        if (req.query.sort === '1') {
-            products = await Product.find({ price: { $gte: fromPrice, $lte: toPrice } }).sort({ price: 1 }).skip(skip).limit(pageSize);
-        } else {
-            products = await Product.find({ price: { $gte: fromPrice, $lte: toPrice } }).sort({ price: -1 }).skip(skip).limit(pageSize);
-        };
+        const sortIndicator = req.query.sort === '1' ? 1 : -1;
+        let products: ProductModel[];
+        products = await Product.find({ price: { $gte: fromPrice, $lte: toPrice } }).populate({ path: 'categoryId', select: 'name -_id' }).sort({ price: sortIndicator }).skip(skip).limit(pageSize);
         const totalPages: number = Math.ceil(totalProducts / pageSize);
         if (products) {
             res.status(200).send({ page: page, totalPages: totalPages, pageSize: pageSize, totalProducts: totalProducts, products: products });

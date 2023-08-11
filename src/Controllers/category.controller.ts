@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 
-import Category from '../Models/categories.model';
-import Product from '../Models/products.model';
+import Category from '../Models/category.model';
+import { Product } from '../Models/product.model';
 import CustomError from '../Utils/CustomError.util';
 
+
+// ---------------------------------- create category ----------------------------------
 
 const createCategory = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -29,6 +31,10 @@ const createCategory = async (req: Request, res: Response, next: NextFunction) =
     }
 };
 
+
+// ---------------------------------- get all categories ----------------------------------
+
+
 const getAllCategories = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const pageSize: number = 8;
@@ -44,6 +50,10 @@ const getAllCategories = async (req: Request, res: Response, next: NextFunction)
     }
 };
 
+
+// ---------------------------------- get category by id ----------------------------------
+
+
 const getCategoryById = async (req: Request, res: Response, next: NextFunction) => {
     try {
         console.log(req.params.id)
@@ -57,6 +67,10 @@ const getCategoryById = async (req: Request, res: Response, next: NextFunction) 
         next(err);
     }
 };
+
+
+// ---------------------------------- delete category ----------------------------------
+
 
 const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -76,6 +90,10 @@ const deleteCategory = async (req: Request, res: Response, next: NextFunction) =
     }
 };
 
+
+// ---------------------------------- update category ----------------------------------
+
+
 const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const category = await Category.findById(req.params.id);
@@ -93,6 +111,10 @@ const updateCategory = async (req: Request, res: Response, next: NextFunction) =
         next(err);
     };
 };
+
+
+// ---------------------------------- search by category ----------------------------------
+
 
 const searchByCategory = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -119,6 +141,7 @@ const searchByCategory = async (req: Request, res: Response, next: NextFunction)
         next(error);
     };
 };
+
 
 
 export default {
