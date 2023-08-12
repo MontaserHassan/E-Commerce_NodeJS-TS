@@ -11,8 +11,9 @@ interface UserModel extends Document {
     email: string;
     password: string;
     confirmPassword: string;
-    rememberMe: boolean
-    photo: string;
+    rememberMe: boolean;
+    token: string;
+    // photo: string;
 };
 
 
@@ -20,7 +21,6 @@ const userSchema = new Schema<UserModel>(
     {
         userName: {
             type: String,
-            unique: true,
             minlength: 10,
             maxlength: 20
         },
@@ -66,6 +66,9 @@ const userSchema = new Schema<UserModel>(
             type: Boolean,
             default: false,
         },
+        token: {
+            type: String
+        }
     },
     {
         timestamps: true,

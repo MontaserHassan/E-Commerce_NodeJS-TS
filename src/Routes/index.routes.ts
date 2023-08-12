@@ -1,10 +1,9 @@
-import express from 'express';
-import { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 
 import customerRoutes from './customer/customer.routes';
 import backOfficeRoutes from './backOffice/backOffice.routes';
 import errorHandler from "../Middlewares/errorHandler.middleware";
-import productController from '../Controllers/product.controller';
+import { productController } from '../Controllers/index.controller';
 
 
 const router = express.Router();
