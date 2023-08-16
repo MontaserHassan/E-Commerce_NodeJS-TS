@@ -10,20 +10,23 @@ import CustomError from '../Utils/CustomError.util';
 
 const registerUserByForm = async (req: Request, res: Response, next: NextFunction) => {
     try {
+        console.log(req.body)
         const checkUserExists = await User.findOne({ email: req.body.email });
         if (checkUserExists) throw new CustomError('This E-mail already exists', 400);
-        if (req.body.password !== req.body.confirmPassword) throw new CustomError('Password and Confirm Password does not match', 400);
-        const userName = req.body.userName || (String(req.body.firstName) + ' ' + String(req.body.lastName)).toLowerCase();
+        const userName = (req.body.userName && req.body.userName[0]) || (req.body.firstName + ' ' + req.body.lastName).toLowerCase();
+        const password = req.body.password[0];
+        const confirmPassword = req.body.confirmPassword[0];
+        if (password !== confirmPassword) throw new CustomError('Password and Confirm Password does not match', 400);
         const newUser = await User.create({
             userName: userName,
-            firstName: (req.body.firstName || '').toLowerCase(),
-            lastName: (req.body.lastName || '').toLowerCase(),
+            firstName: req.body.firstName && req.body.firstName[0] || '',
+            lastName: req.body.lastName && req.body.lastName[0] || '',
             provider: 'form',
-            email: req.body.email,
+            email: req.body.email && req.body.email[0],
             // photo: photo,
-            password: req.body.password,
-            confirmPassword: req.body.confirmPassword,
-            rememberMe: req.body.rememberMe
+            password: password,
+            confirmPassword: confirmPassword,
+            rememberMe: req.body.rememberMe && req.body.rememberMe[0]
         });
         if (!newUser) throw new CustomError('internal server error', 500);
         res.status(201).send(newUser);
